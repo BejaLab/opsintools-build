@@ -1,0 +1,6 @@
+channels:
+ - conda-forge
+ - bioconda
+dependencies:
+ - foldmason=2.7bd21ed
+ - biopython=1.78
