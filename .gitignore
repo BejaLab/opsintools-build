@@ -16,3 +16,7 @@ results/
 # Allow workflow directory and its contents
 !workflow/
 !workflow/*
+!workflow/scripts/
+!workflow/scripts/*
+!workflow/envs/
+!workflow/envs/*

@@ -1,0 +1,7 @@
+channels:
+ - conda-forge
+ - bioconda
+ - salilab
+dependencies:
+ - biopython=1.78
+ - dssp=3.0.0
