@@ -28,3 +28,11 @@ max_rmsd: 3.8
 min_align_len: 180
 max_query_len: 300
 query_padding: 10
+membrane_range:
+   - [9, 31, "TM1"]
+   - [43, 62, "TM2"]
+   - [80, 98, "TM3"]
+   - [108, 127, "TM4"]
+   - [132, 154, "TM5"]
+   - [173, 191, "TM6"]
+   - [201, 224, "TM7"]

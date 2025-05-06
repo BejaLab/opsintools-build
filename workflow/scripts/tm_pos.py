@@ -6,10 +6,13 @@ out_file = snakemake.output[0]
 query = snakemake.wildcards.query
 ref = snakemake.config["ref_pdb"]
 offset = 9 # The offset for reference 7Z09 first residue in alignment
+membrane_range = snakemake.config["membrane_range"]
 
 # Load the positions of the protein which are in the membrane
-membrane_range = [(9, 31), (43, 62), (80, 98), (108, 127), (132, 154), (173, 191), (201, 224)]
-membrane_pos = [i for start, end in membrane_range for i in range(start, end + 1)]
+membrane_pos = []
+for start, end, tm_label in membrane_range:
+    for i in range(start, end + 1):
+        membrane_pos.append((i, tm_label))
 
 # Load the alignment file and filter out all irrelevant sequences
 alignment = AlignIO.read(aln, "clustal")
@@ -27,13 +30,16 @@ for i, (r, q) in enumerate(residues):
 # Validate the lysine in the 7th TM is in the right position
 if mapping[216][0] == 'K' and mapping[216][1] == 'K':
     # Create a new dictionary only with the positions inside the membrane
-    tm_map = {key: value for key, value in mapping.items() if key in membrane_pos}
+    tm_map = {}
+    for pos, tm_label in membrane_pos:
+        if pos in mapping:
+            tm_map[pos] = {"residue_ref": mapping[pos][0], "residue_query": mapping[pos][1], "helix": tm_label}
 else:
     tm_map = "Warning: No lysine at position 216 in the 7th TM."
 
-# Add a descripion to the data that will be the json file
+# Add a description to the data that will be the json file
 out_data = {
-    "description:": f"Mapping for rhodopsin residues inside the transmembrane. Key is position number: (residue in {ref}, residue in {query})",
+    "description": f"Mapping for rhodopsin residues inside the transmembrane. Key is position number: (residue in {ref}, residue in {query} and the number of the TM helix",
     "alignment_map": tm_map
 }
 
