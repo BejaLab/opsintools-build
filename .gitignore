@@ -11,7 +11,6 @@ results/
 
 # Allow specific files
 !README.md
-!config.yaml
 
 # Allow workflow directory and its contents
 !workflow/
@@ -20,3 +19,7 @@ results/
 !workflow/scripts/*
 !workflow/envs/
 !workflow/envs/*
+!workflow/classes
+!workflow/classes/*
+
+!LICENSE
