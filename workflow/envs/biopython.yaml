@@ -5,3 +5,4 @@ channels:
 dependencies:
  - biopython=1.78
  - dssp=3.0.0
+ - libboost=1.73.0

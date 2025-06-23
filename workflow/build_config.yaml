@@ -1,0 +1,17 @@
+ident: 40
+prws_aln_meth:
+  - sw_pair
+  - lalign_id_pair
+  - blast_pair
+ref_pdb: 7Z09
+ref_lysine_pos: 216
+pad_n: 14
+pad_c: 10
+max_missing_n: 10
+max_missing_c: 8
+min_len: 180
+max_rmsd: 3.8
+min_align_len: 180
+max_align_len: 500
+helix_padding_n: 2
+helix_padding_c: 2

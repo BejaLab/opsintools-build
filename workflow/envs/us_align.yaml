@@ -1,4 +1,5 @@
 channels:
+ - conda-forge
  - bioconda
 dependencies:
- - tmalign=20170708
+ - usalign=20241201

@@ -14,6 +14,7 @@ with open(atom_map_file) as file:
 cmd.load(model_file)
 cmd.alter("(all)", "segi = ''")
 cmd.remove("not chain A")
+cmd.remove("(hydro)")
 
 for resn_from, components in atom_map.items():
     for resn_to, res_data in components.items():
@@ -42,17 +43,14 @@ for het_chain, resis in stored.het_residues.items():
 # Re-open the file to fix the order of the atoms
 # since .sort() is not enough
 
-temp = NamedTemporaryFile(suffix = '.pdb')
-cmd.set("pdb_conect_nodup", 0)
-cmd.save(temp.name)
-temp = NamedTemporaryFile(suffix = '.pdb')
-cmd.set("pdb_conect_nodup", 0)
-cmd.save(temp.name)
+with NamedTemporaryFile(suffix = '.pdb', delete_on_close = False) as temp:
+    cmd.save(temp.name)
+    temp.close()
+    cmd.reinitialize()
+    cmd.load(temp.name)
 
-cmd.reinitialize()
-cmd.load(temp.name)
-temp.close()
-
-cmd.set("pdb_conect_nodup", 0)
-cmd.save(output_file)
-
+with open(output_file, 'w') as file:
+    for line in cmd.get_pdbstr().splitlines():
+        line_type = line.split()[0]
+        if line_type in [ 'ATOM', 'TER', 'END' ]:
+            file.write(line + '\n')

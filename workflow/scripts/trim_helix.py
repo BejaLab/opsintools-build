@@ -1,7 +1,10 @@
 from Bio import PDB
+from classes.TrimmedChain import TrimmedChain
 
 input_file = str(snakemake.input)
 output_file = str(snakemake.output)
+padding_n = snakemake.params['padding_n']
+padding_c = snakemake.params['padding_c']
 
 parser = PDB.PDBParser(QUIET = True)
 structure = parser.get_structure("protein", input_file)
@@ -21,27 +24,17 @@ def find_helix(structure, pdb_file):
             last_pos = pos
     return first_pos, last_pos
 
-def trim_pdb(structure, output_pdb, first_pos, last_pos):
+def trim_pdb(structure, output_pdb, first_pos, last_pos, padding_n, padding_c):
     """
     Trim a pdb structure to the region [start;stop] 1-based
     and save in the the structure in output pdb file
     """
     io = PDB.PDBIO()
     io.set_structure(structure)
-    class TrimmedStructure(PDB.Select):
-        def __init__(self, model, chain):
-            self.pos = 0
-            self.model = model
-            self.chain = chain
-        def accept_residue(self, residue):
-            protein, model, chain, (hetflag, res_id, icode) = residue.full_id
-            is_hetatom = hetflag.strip()
-            if not is_hetatom and model == self.model and chain == self.chain:
-                self.pos += 1
-                return first_pos <= self.pos <= last_pos
-    io.save(output_pdb, TrimmedStructure(0, 'A'))
+    trimmed_chain = TrimmedChain(model = 0, chain = 'A', start = first_pos - padding_n, end = last_pos + padding_c)
+    io.save(output_pdb, trimmed_chain)
 
 first_pos, last_pos = find_helix(structure, input_file)
 assert first_pos is not None, "Did not find helices in the structure"
 
-trim_pdb(structure, output_file, first_pos, last_pos)
+trim_pdb(structure, output_file, first_pos, last_pos, padding_n, padding_c)
