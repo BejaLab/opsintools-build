@@ -17,11 +17,9 @@ ident = config["ident"]
 # Define the final targets of the workflow
 rule all:
     input:
-        "database/reps.fasta",
-        "database/reps.fasta.fai",
-        "database/ref.json",
-        "database/reps",
-        "database/must.txt"
+        "data/microbial-rhodopsins/ref.json",
+        "data/microbial-rhodopsins/reps",
+        "data/microbial-rhodopsins/must.txt"
 
 # Download AlphaFold pdb files according to the full list provided
 rule dload_alphafold:
@@ -157,7 +155,7 @@ checkpoint final_fasta_mmseqs:
         to_remove = f"analysis/clustering/temp/mmseqs_{ident}_rep_del.txt",
         to_add = f"analysis/clustering/temp/mmseqs_{ident}_ref_add.txt"
     output:
-        "database/reps.fasta"
+        "analysis/clustering/temp/mmseqs_{ident}_reps.fasta"
     conda:
         "envs/tools.yaml"
     shell:
@@ -175,21 +173,11 @@ def parse_opm(data):
     matches = re.findall('(\\d+)\\(\\s*(\\d+)-\\s*(\\d+)\\)', data['subunits'][0]['segment'])
     return { f"TM{tm}": [ int(start), int(end) ] for tm, start, end in matches }
 
-rule faidx:
-    input:
-        "{prefix}"
-    output:
-        "{prefix}.fai"
-    conda:
-        "envs/tools.yaml"
-    shell:
-        "seqkit faidx {input}"
-
 rule database_pdb:
     input:
         rep_pdb_files
     output:
-        directory("database/reps")
+        directory("data/microbial-rhodopsins/reps")
     shell:
         "mkdir -p {output} && cp {input} {output}/"
 
@@ -206,7 +194,7 @@ rule write_ref_data:
         pdb = f"analysis/data/pdb/{ref_pdb}/struct.pdb",
         opm = f"analysis/data/pdb/{ref_pdb}/opm.json"
     output:
-        "database/ref.json"
+        "data/microbial-rhodopsins/ref.json"
     run:
         res_pos = {}
         with open(input.pdb) as file:
@@ -228,6 +216,6 @@ rule copy_pdb_list:
     input:
         "workflow/pdb.txt"
     output:
-        "database/must.txt"
+        "data/microbial-rhodopsins/must.txt"
     shell:
         "cut -f1 {input} > {output}"
