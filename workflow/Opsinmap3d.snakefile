@@ -17,9 +17,9 @@ ident = config["ident"]
 # Define the final targets of the workflow
 rule all:
     input:
-        "data/microbial-rhodopsins/ref.json",
-        "data/microbial-rhodopsins/reps",
-        "data/microbial-rhodopsins/must.txt"
+        "microbial-rhodopsins-data/ref.json",
+        "microbial-rhodopsins-data/reps",
+        "microbial-rhodopsins-data/must.txt"
 
 # Download AlphaFold pdb files according to the full list provided
 rule dload_alphafold:
@@ -177,7 +177,7 @@ rule database_pdb:
     input:
         rep_pdb_files
     output:
-        directory("data/microbial-rhodopsins/reps")
+        directory("microbial-rhodopsins-data/reps")
     shell:
         "mkdir -p {output} && cp {input} {output}/"
 
@@ -194,7 +194,7 @@ rule write_ref_data:
         pdb = f"analysis/data/pdb/{ref_pdb}/struct.pdb",
         opm = f"analysis/data/pdb/{ref_pdb}/opm.json"
     output:
-        "data/microbial-rhodopsins/ref.json"
+        "microbial-rhodopsins-data/ref.json"
     run:
         res_pos = {}
         with open(input.pdb) as file:
@@ -216,6 +216,6 @@ rule copy_pdb_list:
     input:
         "workflow/pdb.txt"
     output:
-        "data/microbial-rhodopsins/must.txt"
+        "microbial-rhodopsins-data/must.txt"
     shell:
         "cut -f1 {input} > {output}"
