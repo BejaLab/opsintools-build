@@ -24,7 +24,18 @@ def find_helix(structure, pdb_file):
             last_pos = pos
     return first_pos, last_pos
 
-def trim_pdb(structure, output_pdb, first_pos, last_pos, padding_n, padding_c):
+def get_seqres(pdb_file):
+    """
+    Extract the SEQRES records
+    """
+    seqres = ''
+    with open(input_file) as file:
+        for line in file:
+            if line.startswith('SEQRES '):
+                seqres += line
+    return seqres
+
+def trim_pdb(structure, file, first_pos, last_pos, padding_n, padding_c):
     """
     Trim a pdb structure to the region [start;stop] 1-based
     and save in the the structure in output pdb file
@@ -32,9 +43,13 @@ def trim_pdb(structure, output_pdb, first_pos, last_pos, padding_n, padding_c):
     io = PDB.PDBIO()
     io.set_structure(structure)
     trimmed_chain = TrimmedChain(model = 0, chain = 'A', start = first_pos - padding_n, end = last_pos + padding_c)
-    io.save(output_pdb, trimmed_chain)
+    io.save(file, trimmed_chain)
 
 first_pos, last_pos = find_helix(structure, input_file)
 assert first_pos is not None, "Did not find helices in the structure"
 
-trim_pdb(structure, output_file, first_pos, last_pos, padding_n, padding_c)
+seqres = get_seqres(input_file)
+
+with open(output_file, 'w') as file:
+    file.write(seqres)
+    trim_pdb(structure, file, first_pos, last_pos, padding_n, padding_c)

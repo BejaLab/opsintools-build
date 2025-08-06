@@ -1,0 +1,16 @@
+name: animal-rhodopsins
+ident: 40
+ref_pdb: 1U19.A
+ref_lysine_pos: 296
+pad_n: 14
+pad_c: 10
+max_missing_n: 10
+max_missing_c: 8
+min_len: 250
+max_rmsd: 3.8
+min_align_len: 200
+max_align_len: 500
+helix_padding_n: 2
+helix_padding_c: 2
+alphafold_list: workflow/animal_alphafold.txt
+pdb_list: workflow/animal_pdb.txt

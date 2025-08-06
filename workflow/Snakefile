@@ -1,25 +1,31 @@
 from Bio import SeqIO
 import json, re, os
 
-configfile: "workflow/build_config.yaml"
+keys = "alphafold_list", "ref_pdb", "ref_lysine_pos", "pdb_list", "pad_n", "pad_c", "name", "min_len", "min_align_len", "max_rmsd", "max_missing_n", "max_missing_c", "max_align_len", "ident", "helix_padding_n", "helix_padding_c"
+missing = [ key for key in keys if key not in config ]
+assert not missing, f"The following keys are missing from the config {', '.join(missing)}"
 
 # Set up the file with all the accession numbers of proteins to download from AlphaFold
-with open("workflow/alphafold.txt") as ids:
+alphafold_list_file = config['alphafold_list']
+with open(alphafold_list_file) as ids:
     alphafold_list = [ line.strip() for line in ids ]
 
 # Set up the file with all the accession numbers of reference Rhodopsins to download from RCSB
-with open("workflow/pdb.txt") as ids:
+pdb_list_file = config['pdb_list']
+with open(pdb_list_file) as ids:
     pdb_list = [ line.split()[0] for line in ids ]
 
 ref_pdb = config["ref_pdb"]
 ident = config["ident"]
 
+dataset_name = config['name']
+
 # Define the final targets of the workflow
 rule all:
     input:
-        "microbial-rhodopsins-data/ref.json",
-        "microbial-rhodopsins-data/reps",
-        "microbial-rhodopsins-data/must.txt"
+        f"{dataset_name}-data/ref.json",
+        f"{dataset_name}-data/reps",
+        f"{dataset_name}-data/exptl.txt"
 
 # Download AlphaFold pdb files according to the full list provided
 rule dload_alphafold:
@@ -31,27 +37,18 @@ rule dload_alphafold:
     shell:
         "wget -qO {output} https://alphafold.ebi.ac.uk/files/AF-{wildcards.pdb}-F1-model_v4.pdb"
 
-# Download RCSB pdb files according to the Rhodopsin reference list provided
-rule dload_pdb:
-    output:
-        "analysis/data/pdb/{pdb}/struct_raw.pdb"
-    resources:
-        pdb_dload = 1
-    threads: 0
-    shell:
-        "wget -qO {output} https://files.rcsb.org/download/{wildcards.pdb}.pdb"
-
 # Fix the RCSB pdb files
-rule fix_pdb:
+rule dload_pdb:
     input:
-        model = "analysis/data/pdb/{pdb}/struct_raw.pdb",
         atom_map = "workflow/atom_map.json"
     output:
         "analysis/data/pdb/{pdb}/struct.pdb"
     conda:
         "envs/pymol.yaml"
+    shadow:
+        "minimal"
     script:
-        "scripts/fix_structures.py"
+        "scripts/dload_and_clean_pdb.py"
 
 # Trim helix
 rule trim_helix:
@@ -67,7 +64,7 @@ rule trim_helix:
     script:
         "scripts/trim_helix.py"
 
-# Align each protein to the reference Rhodopsin (BR) using us-align
+# Align each protein to the reference rhodopsin (e.g. BR) using us-align
 rule us_align:
     input:
         ref_p = f"analysis/data/pdb/{ref_pdb}/struct_helices.pdb",
@@ -79,12 +76,12 @@ rule us_align:
     shell:
         "USalign {input.ref_p} {input.query_p} -do > {output}"
 
-# Trim each fasta file according to the BR alignment and filter according to RMSD & alignment length.
+# Trim each fasta file according to the ref alignment and filter according to RMSD & alignment length.
 rule prot_trim_filter:
     input:
         aln = "analysis/data/{database}/{pdb}/aln_to_ref_tm.txt",
         query_pdb = "analysis/data/{database}/{pdb}/struct.pdb",
-        ref_pdb = f"analysis/data/pdb/{ref_pdb}/struct.pdb"
+        ref_pdb = f"analysis/data/pdb/{ref_pdb}/struct_helices.pdb"
     output:
         fasta = "analysis/data/{database}/{pdb}/{pdb}.fasta",
         pdb = "analysis/data/{database}/{pdb}/{pdb}.pdb"
@@ -103,7 +100,7 @@ rule prot_trim_filter:
     script:
         "scripts/prot_trim_filter.py"
 
-# Add all the protein fasta files into a single file for clustering, reference proteins as is while the rest as trimmed versions.
+# Add all the protein fasta files into a single file for clustering
 rule all_fasta:
     input:
         expand("analysis/data/alphafold/{pdb}/{pdb}.fasta", pdb = alphafold_list),
@@ -137,11 +134,12 @@ rule cluster_mmseqs:
 # Create lists of sequences to remove and to add so that all the reference Rhodopsins from the list above will be representatives of their cluster - mmseqs
 rule ready_rep_w_ref_mmseqs:
     input:
-        "analysis/clustering/mmseqs_{ident}_rep_seq.fasta",
-        "analysis/clustering/mmseqs_{ident}_cluster.tsv"
+        pdb_list = pdb_list_file,
+        fasta = "analysis/clustering/mmseqs_{ident}_rep_seq.fasta",
+        tsv = "analysis/clustering/mmseqs_{ident}_cluster.tsv"
     output:
-        "analysis/clustering/temp/mmseqs_{ident}_rep_del.txt",
-        "analysis/clustering/temp/mmseqs_{ident}_ref_add.txt"
+        rep_del = "analysis/clustering/temp/mmseqs_{ident}_rep_del.txt",
+        rep_add = "analysis/clustering/temp/mmseqs_{ident}_ref_add.txt"
     conda:
         "envs/biopython.yaml"
     script:
@@ -169,15 +167,11 @@ def rep_pdb_files(wildcards):
         pdb_files.append(f"analysis/data/{database}/{record.id}/{record.id}.pdb")
     return pdb_files
 
-def parse_opm(data):
-    matches = re.findall('(\\d+)\\(\\s*(\\d+)-\\s*(\\d+)\\)', data['subunits'][0]['segment'])
-    return { f"TM{tm}": [ int(start), int(end) ] for tm, start, end in matches }
-
 rule database_pdb:
     input:
         rep_pdb_files
     output:
-        directory("microbial-rhodopsins-data/reps")
+        directory(f"{dataset_name}-data/reps")
     shell:
         "mkdir -p {output} && cp {input} {output}/"
 
@@ -191,31 +185,22 @@ rule fetch_opm:
 
 rule write_ref_data:
     input:
-        pdb = f"analysis/data/pdb/{ref_pdb}/struct.pdb",
+        pdb = f"analysis/data/pdb/{ref_pdb}/{ref_pdb}.pdb",
         opm = f"analysis/data/pdb/{ref_pdb}/opm.json"
     output:
-        "microbial-rhodopsins-data/ref.json"
-    run:
-        res_pos = {}
-        with open(input.pdb) as file:
-            for line in file:
-                if line.startswith('ATOM'):
-                    res_pos[int(line[22:26])] = 1
-        with open(input.opm) as file:
-            opm = json.load(file)
-        data = {
-            "id": ref_pdb,
-            "res_pos": list(res_pos.keys()),
-            "lysine": config['ref_lysine_pos'],
-            "tms": parse_opm(opm)
-        }
-        with open(output[0], 'w') as file:
-            json.dump(data, file)
+        f"{dataset_name}-data/ref.json"
+    params:
+        ref_pdb = ref_pdb,
+        ref_lysine_pos = config['ref_lysine_pos']
+    conda:
+        "envs/biopython.yaml"
+    script:
+        "scripts/write_ref_data.py"
 
 rule copy_pdb_list:
     input:
-        "workflow/pdb.txt"
+        pdb_list_file
     output:
-        "microbial-rhodopsins-data/must.txt"
+        f"{dataset_name}-data/exptl.txt"
     shell:
         "cut -f1 {input} > {output}"

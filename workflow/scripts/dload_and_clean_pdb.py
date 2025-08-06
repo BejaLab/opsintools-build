@@ -1,0 +1,59 @@
+from pymol import cmd, stored
+from psico.exporting import save_pdb
+from collections import defaultdict
+import json
+from os import path
+from tempfile import NamedTemporaryFile
+
+pdb = snakemake.wildcards['pdb']
+atom_map_file = snakemake.input['atom_map']
+output_file = str(snakemake.output)
+
+with open(atom_map_file) as file:
+    atom_map = json.load(file)
+
+cmd.fetch(pdb)
+
+# Expect one chain
+stored.chains = set()
+cmd.iterate("(all)", "stored.chains.add(chain)")
+assert len(stored.chains) == 1, f"Expected exactly one chain in {pdb}, got {len(stored.chains)}"
+
+# Cleanup
+cmd.remove("(hydro)")
+cmd.remove("not alt ''+A")
+cmd.remove("not resi 1-") # remove residues before the start of the protein
+cmd.alter("(all)", "segi, alt, chain = '', '', 'A'")
+
+# Rename the atoms of the ligand (and of the residue connected to it)
+for resn_from, components in atom_map.items():
+    for resn_to, res_data in components.items():
+        res_type = res_data['type']
+        for atom_from, atom_to in res_data['atoms'].items():
+            stored.resn_name_type = resn_to, atom_to, res_type
+            cmd.alter(f"resn {resn_from} and name {atom_from}", "resn, name, type = stored.resn_name_type")
+    stored.extra_atoms = []
+    cmd.iterate(f"resn {resn_from}", "stored.extra_atoms.append(name)")
+    assert not stored.extra_atoms, f"Found additional atoms for ligand {resn_from}: {stored.extra_atoms}"
+
+# Remove all non-covalent ligands
+cmd.remove("hetatm and not byres bound_to polymer")
+
+# Re-number heteroatom resi's
+stored.atom_residues = set()
+stored.hetatm_residues = set()
+cmd.iterate("not hetatm", "stored.atom_residues.add(int(resi))")
+cmd.iterate("hetatm", "stored.hetatm_residues.add(int(resi))")
+
+stored.target_resi = max(stored.atom_residues)
+
+# temporally re-number them to put outside of the target range
+stored.offset = stored.target_resi + len(stored.hetatm_residues) + 1000
+cmd.alter("hetatm", "resi = stored.offset + int(resi)")
+for resi in stored.hetatm_residues:
+    from_resi = resi + stored.offset
+    stored.target_resi += 1
+    cmd.alter(f"hetatm and resi {from_resi}", "resi = stored.target_resi")
+
+cmd.sort()
+save_pdb(output_file, seqres = True)

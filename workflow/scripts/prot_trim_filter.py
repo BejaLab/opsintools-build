@@ -61,12 +61,20 @@ def filter_aln_seq(aln_file, max_rmsd, min_len, min_aln_len, max_aln_len, ref_ly
     return aln
 
 # Function to trim the pdb file according to start and stop positions
-def trim_struct(structure, seq_id, trimmed_pdb, trimmed_fasta, start, end):
+def trim_struct(structure, seq_id, query_pdb, trimmed_pdb, trimmed_fasta, start, end):
     io = PDB.PDBIO()
     io.set_structure(structure)
 
-    trimmed_chain = TrimmedChain(model = 0, chain = 'A', start = start, end = end)
-    io.save(trimmed_pdb, trimmed_chain)
+    seqres = ''
+    with open(query_pdb_file) as file:
+        for line in file:
+            if line.startswith('SEQRES '):
+                seqres += line
+
+    with open(trimmed_pdb, 'w') as file:
+        file.write(seqres)
+        trimmed_chain = TrimmedChain(model = 0, chain = 'A', start = start, end = end)
+        io.save(file, trimmed_chain)
 
     trimmed_record = SeqIO.SeqRecord(Seq(trimmed_chain.get_seq()), id = seq_id, description = "")
     SeqIO.write(trimmed_record, trimmed_fasta, "fasta")
@@ -77,9 +85,7 @@ def get_first_and_last(structure):
 
 # Run the filter_aln_seq function on the aln file with all filter params
 aln = filter_aln_seq(aln_file, max_rmsd, min_len, min_aln_len, max_aln_len, ref_lys_pos)
-
 success = False
-
 if aln is not None:
     parser = PDB.PDBParser(QUIET = True)
     ref_structure = parser.get_structure('ref', ref_pdb_file)
@@ -95,8 +101,8 @@ if aln is not None:
     missing_c = ref_last  - ref_last_aln_pos
 
     if missing_n <= max_missing_n and missing_c <= max_missing_c:
-        # Trim the strcuture and save it to output pdb and its trimmed sequence to fasta
-        trim_struct(query_structure, query_id, trimmed_pdb_file, trimmed_fasta_file, start = query_first_aln_pos - missing_n - pad_n, end = query_last_aln_pos + missing_c + pad_c)
+        # Trim the structure and save it to output pdb and its trimmed sequence to fasta
+        trim_struct(query_structure, query_id, query_pdb_file, trimmed_pdb_file, trimmed_fasta_file, start = query_first_aln_pos - missing_n - pad_n, end = query_last_aln_pos + missing_c + pad_c)
         success = True
 
 if not success:

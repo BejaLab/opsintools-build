@@ -1,11 +1,10 @@
 import requests, os, json
 
 output_file = str(snakemake.output)
-pdb_id = snakemake.wildcards['pdb']
+pdb_id, *chain = snakemake.wildcards['pdb'].split('.')
 
 host = "https://opm-back.cc.lehigh.edu/opm-backend/primary_structures"
 
-# Define a function that gets the opm_id from the search request
 def get_opm_id(pdb_id):
     response = requests.get(f"{host}?search={pdb_id}")
     data = response.json()
