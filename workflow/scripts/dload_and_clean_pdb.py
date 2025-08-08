@@ -36,6 +36,17 @@ for resn_from, components in atom_map.items():
     cmd.iterate(f"resn {resn_from}", "stored.extra_atoms.append(name)")
     assert not stored.extra_atoms, f"Found additional atoms for ligand {resn_from}: {stored.extra_atoms}"
 
+# Fix resi's in structures like 8XX8
+stored.polymer_resis = set()
+cmd.iterate('polymer', 'stored.polymer_resis.add(int(resi))')
+min_resi = min(stored.polymer_resis)
+stored.update_resis = {}
+for i, resi in enumerate(sorted(stored.polymer_resis)):
+    if resi != i + min_resi:
+        stored.update_resis[str(resi)] = i + min_resi
+if stored.update_resis:
+    cmd.alter('polymer', 'resi = stored.update_resis[resi] if resi in stored.update_resis else resi')
+
 # Remove all non-covalent ligands
 cmd.remove("hetatm and not byres bound_to polymer")
 
@@ -56,4 +67,5 @@ for resi in stored.hetatm_residues:
     cmd.alter(f"hetatm and resi {from_resi}", "resi = stored.target_resi")
 
 cmd.sort()
+cmd.set('pdb_conect_nodup', 0)
 save_pdb(output_file, seqres = True)

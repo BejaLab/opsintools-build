@@ -162,9 +162,13 @@ checkpoint final_fasta_mmseqs:
 def rep_pdb_files(wildcards):
     fasta_file = checkpoints.final_fasta_mmseqs.get(ident = config['ident']).output[0]
     pdb_files = []
+    in_pdb_list = []
     for record in SeqIO.parse(fasta_file, 'fasta'):
         database = "pdb" if record.id in pdb_list else "alphafold"
+        if record.id in pdb_list:
+            in_pdb_list.append(record.id)
         pdb_files.append(f"analysis/data/{database}/{record.id}/{record.id}.pdb")
+    assert len(in_pdb_list) == len(pdb_list), "Some experimental structures did not pass the filtering criteria"
     return pdb_files
 
 rule database_pdb:

@@ -5,7 +5,7 @@ ref_lysine_pos: 296
 pad_n: 14
 pad_c: 10
 max_missing_n: 10
-max_missing_c: 8
+max_missing_c: 12
 min_len: 250
 max_rmsd: 3.8
 min_align_len: 200

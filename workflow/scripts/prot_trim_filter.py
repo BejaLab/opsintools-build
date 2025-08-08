@@ -36,7 +36,7 @@ max_aln_len = snakemake.params.get('max_aln_len', inf)
 min_len = snakemake.params.get('min_len', 0)
 ref_lys_pos = snakemake.params.get('ref_lys_pos', None)
 
-# Function to check if query needs to be filtered out. Save aligned sequence for both referance and query
+# Function to check if query needs to be filtered out. Save aligned sequence for both reference and query
 def filter_aln_seq(aln_file, max_rmsd, min_len, min_aln_len, max_aln_len, ref_lys_pos):
     aln = USalign(aln_file)
     
