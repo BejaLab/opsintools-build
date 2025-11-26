@@ -1,5 +1,6 @@
-name: animal-rhodopsins
+name: animal_opsin
 ident: 40
+ident_align: 60
 ref_pdb: 1U19.A
 ref_lysine_pos: 296
 pad_n: 14
@@ -12,5 +13,5 @@ min_align_len: 200
 max_align_len: 500
 helix_padding_n: 2
 helix_padding_c: 2
-alphafold_list: workflow/animal_alphafold.txt
-pdb_list: workflow/animal_pdb.txt
+alphafold_list: workflow/animal_opsin_alphafold.txt
+pdb_list: workflow/animal_opsin_pdb.txt

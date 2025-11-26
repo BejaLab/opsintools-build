@@ -1,5 +1,6 @@
-name: microbial-rhodopsins
+name: microb_rhodopsin_canon
 ident: 40
+ident_align: 60
 ref_pdb: 7Z09.A
 ref_lysine_pos: 216
 pad_n: 14
@@ -12,5 +13,5 @@ min_align_len: 180
 max_align_len: 500
 helix_padding_n: 2
 helix_padding_c: 2
-alphafold_list: workflow/microbial_alphafold.txt
-pdb_list: workflow/microbial_pdb.txt
+alphafold_list: workflow/microb_rhodopsin_canon_alphafold.txt
+pdb_list: workflow/microb_rhodopsin_canon_pdb.txt

@@ -1,0 +1,6 @@
+channels:
+ - conda-forge
+ - bioconda
+dependencies:
+ - hhsuite=3.3.0
+ - seqkit=2.10.1
