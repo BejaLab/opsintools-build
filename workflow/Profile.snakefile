@@ -1,5 +1,5 @@
-dbs = { 'BFD': 'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt', 'uniclust': 'UniRef30_2023_02' }
-chunks = 100
+num_chunks = 100
+chunks = [ f"{i:02d}" for i in range(num_chunks) ]
 
 rule templates:
     input:
@@ -71,148 +71,100 @@ rule aln_to_a3m:
     shell:
         "reformat.pl fas a3m {input} - -v 0 -M {params.M} | hhconsensus -i /dev/stdin -o /dev/stdout | grep -v '^#' | sed '2,$s/^>/>@/' > {output}"
 
-rule hhblits_bfd:
-    input:
-        db_dir = "analysis/databases/BFD",
-        a3m = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps.a3m"
-    output:
-        hhr = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD_hhblits.hhr",
-        a3m = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD_hhblits.a3m"
-    log:
-        "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD_hhblits.log"
-    params:
-        db = lambda w, input: f"{input.db_dir}/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt",
-        e = 1e-5,
-        n = 3
-    conda:
-        "envs/hhsuite.yaml"
-    threads:
-        10
-    shell:
-        "hhblits -i {input.a3m} -d {params.db} -o {output.hhr} -oa3m {output.a3m} -n {params.n} -e {params.e} -id {wildcards.ident} -cpu {threads} &> {log}"
-
-rule hhsearch_uniclust:
-    input:
-        db_dir = "analysis/databases/uniclust",
-        a3m = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps.a3m"
-    output:
-        hhr = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_uniclust.hhr",
-        a3m = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_uniclust.a3m"
-    log:
-        "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_uniclust.log"
-    params:
-        db = lambda w, input: f"{input.db_dir}/UniRef30_2023_02",
-        e = 1e-5,
-        BZ = 1000,
-        maxres = 10000,
-        maxmem = 150
-    conda:
-        "envs/hhsuite.yaml"
-    threads:
-        1
-    shell:
-        "hhsearch -mark -glob -i {input.a3m} -d {params.db} -o {output.hhr} -oa3m {output.a3m} -e {params.e} -cpu {threads} -B {params.BZ} -Z {params.BZ} -maxres {params.maxres} -maxmem {params.maxmem} &> {log}"
-
-rule hhsearch_bfd:
-    input:
-        db_dir = "analysis/databases/BFD",
-        a3m = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps.a3m"
-    output:
-        hhr = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD.hhr",
-        a3m = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD.a3m"
-    log:
-        "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD.log"
-    params:
-        db = lambda w, input: f"{input.db_dir}/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt",
-        e = 1e-5,
-        BZ = 1000000
-    conda:
-        "envs/hhsuite.yaml"
-    threads:
-        5
-    shell:
-        "hhsearch -all -glob -i {input.a3m} -d {params.db} -o {output.hhr} -oa3m {output.a3m} -e {params.e} -id {wildcards.ident} -cpu {threads} -B {params.BZ} -Z {params.BZ} &> {log}"
-
-rule a3m_to_a2m:
-    input:
-        "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD.a3m"
-    output:
-        "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD.a2m"
-    conda:
-        "envs/hhsuite.yaml"
-    shell:
-        "reformat.pl a3m a2m {input} {output}"
-
-rule trim_a2m:
-    input:
-        "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD.a2m"
-    output:
-        "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD_trimmed.a2m"
-    run:
-        with open(str(output), 'w') as file:
-            for record in SeqIO.parse(str(input), "fasta"):
-                if record.id != 'ss_pred' and record.id != 'ss_conf' and not record.id.endswith('_consensus'):
-                    SeqIO.write(record, file, 'fasta')
-
-rule database_num_records:
-    input:
-        "analysis/databases/{db}"
-    output:
-        "analysis/databases/{db}_num_records.txt"
-    params:
-        ffindex = lambda w, input: Path(str(input)) / (dbs[w.db] + '_a3m.ffindex')
-    shell:
-        "wc -l < {params.ffindex} > {output}"
-
-rule split_ffindex:
-    input:
-        db_dir = "analysis/databases/{db}",
-        num_records = "analysis/databases/{db}_num_records.txt"
-    output:
-        directory("analysis/databases_subsets/{db}_{chunk}_{of}")
-    params:
-        input_prefix = lambda w, input: Path(input.db_dir) / dbs[w.db],
-        output_prefix = lambda w, output: Path(str(output)) / dbs[w.db]
-    script:
-        "scripts/split_ffindex.py"
-
 rule hhsearch_chunk:
     input:
-        db_dir = "analysis/databases_subsets/{db}_{chunk}_{of}",
+        a3m_ffdata  = "analysis/databases_split/{db}_{chunk}_{of}_a3m.ffdata",
+        a3m_ffindex = "analysis/databases_split/{db}_{chunk}_{of}_a3m.ffindex",
+        cs219_ffdata  = "analysis/databases_split/{db}_{chunk}_{of}_cs219.ffdata",
+        cs219_ffindex = "analysis/databases_split/{db}_{chunk}_{of}_cs219.ffindex",
+        hhm_ffdata  = "analysis/databases_split/{db}_{chunk}_{of}_hhm.ffdata",
+        hhm_ffindex = "analysis/databases_split/{db}_{chunk}_{of}_hhm.ffindex",
         a3m = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps.a3m"
     output:
-        hhr = "analysis/hhsearch/{dataset_name}/mmseqs_{ident}_reps_{db}_{chunk}_{of}.hhr",
-        a3m = "analysis/hhsearch/{dataset_name}/mmseqs_{ident}_reps_{db}_{chunk}_{of}.a3m"
+        "analysis/hhsearch/{dataset_name}/chunks/mmseqs_{ident}_reps_{db}_{chunk}_{of}.hhr"
     log:
-        "analysis/hhsearch/{dataset_name}/mmseqs_{ident}_reps_{db}_{chunk}_{of}.log"
+        "analysis/hhsearch/{dataset_name}/chunks/mmseqs_{ident}_reps_{db}_{chunk}_{of}.log"
     params:
-        db = lambda w, input: Path(input.db_dir) / dbs[w.db],
-        e = 1e-5,
-        BZ = 1000000
+        db = "analysis/databases_split/{db}_{chunk}_{of}",
+        e = 1,
+        BZ = 100000
     conda:
         "envs/hhsuite.yaml"
     threads:
         10
-    resources:
-        hhsearch = 1
     shell:
-        "hhsearch -all -glob -i {input.a3m} -d {params.db} -o {output.hhr} -oa3m {output.a3m} -e {params.e} -id {wildcards.ident} -cpu {threads} -B {params.BZ} -Z {params.BZ} -maxmem inf &> {log}"
+        "hhsearch -all -glob -i {input.a3m} -d {params.db} -o {output} -e {params.e} -cpu {threads} -B {params.BZ} -Z {params.BZ} -maxmem inf &> {log}"
 
-rule hhsearch_collect:
+rule filter_hhsearch:
     input:
-        expand("analysis/hhsearch/{{dataset_name}}/mmseqs_{{ident}}_reps_{{db}}_{chunk}_{of}.a3m", chunk = [ f"{i:02d}" for i in range(chunks) ], of = chunks)
+        hhr = expand("analysis/hhsearch/{{dataset_name}}/chunks/mmseqs_{{ident}}_reps_{{db}}_{chunk}_{of}.hhr", chunk = chunks, of = num_chunks),
+        names = expand("analysis/databases_split/{{db}}_{chunk}_{of}_names.txt", chunk = chunks, of = num_chunks),
+        a3m = expand("analysis/databases_split/{{db}}_{chunk}_{of}_a3m.ffindex", chunk = chunks, of = num_chunks),
+        cs219 = expand("analysis/databases_split/{{db}}_{chunk}_{of}_cs219.ffindex", chunk = chunks, of = num_chunks),
+        hhm = expand("analysis/databases_split/{{db}}_{chunk}_{of}_hhm.ffindex", chunk = chunks, of = num_chunks)
     output:
-        "analysis/hhsearch/{dataset_name}/mmseqs_{ident}_reps_{db}.a3m"
+        a3m = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_a3m.ffindex",
+        cs219 = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_cs219.ffindex",
+        hhm = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_hhm.ffindex"
+    params:
+        probab = 92
+    conda:
+        "envs/biopython.yaml"
+    script:
+        "scripts/filter_hhsearch_records.py"
+
+rule link_filtered_ffdata:
+    input:
+        lambda w: "analysis/databases/{db}/{prefix}_{ext}.ffdata".format(db = w.db, prefix = dbs[w.db], ext = w.ext)
+    output:
+        "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_{ext}.ffdata"
     shell:
-        "cat {input} > {output}"
+        "ln -sr {input} {output}"
+
+rule hhsearch_filtered:
+    input:
+        a3m_ffindex = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_a3m.ffindex",
+        cs219_ffindex = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_cs219.ffindex",
+        hhm_ffindex = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_hhm.ffindex",
+        a3m_ffdata = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_a3m.ffdata",
+        cs219_ffdata = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_cs219.ffdata",
+        hhm_ffdata = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}_hhm.ffdata",
+        a3m = "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps.a3m"
+    output:
+        hhr = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}.hhr",
+        a3m = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}.a3m"
+    log:
+        "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}.log"
+    params:
+        db = "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}",
+        e = 1,
+        BZ = 100000
+    conda:
+        "envs/hhsuite.yaml"
+    threads:
+        10
+    shell:
+        "hhsearch -all -glob -i {input.a3m} -d {params.db} -o {output.hhr} -oa3m {output.a3m} -e 1 -cpu {threads} -B {params.BZ} -Z {params.BZ} &> {log}"
+
+rule hhfilter:
+    input:
+        "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}.a3m"
+    output:
+        "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}.a2m"
+    params:
+        ident = config["ident_hmmbuild"]
+    conda:
+        "envs/hhsuite.yaml"
+    shell:
+        "hhfilter -id {params.ident} -i {input} -o /dev/stdout | reformat.pl a3m a2m - - -v 0 | seqkit grep -vrp _consensus$ -o {output}"
 
 rule hmmbuild:
     input:
-        lambda w: "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps_BFD_trimmed.a2m".format(dataset_name = w.dataset_name, ident = config['ident_align'])
+        lambda w: "analysis/hhsearch/{dataset_name}/filtered/mmseqs_{ident}_reps_{db}.a2m".format(dataset_name = w.dataset_name, db = w.db, ident = config['ident_hhsearch'])
     output:
-        "output/{dataset_name}/profile_{type}.hmm"
+        "output/{dataset_name}/profile_{db}_{type}.hmm"
     params:
-        args = lambda w: { 'opt': '--fragthresh 0 --wblosum', 'def': '' }[w.type]
+        args = lambda w: { 'opt': '--wnone', 'def': '' }[w.type]
     conda:
         "envs/hmmer.yaml"
     shell:

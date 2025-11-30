@@ -19,6 +19,9 @@ ref_pdb = config["ref_pdb"]
 
 dataset_name = config['name']
 
+num_chunks = 100
+chunks = [ f"{i:02d}" for i in range(num_chunks) ]
+
 include: "Data.snakefile"
 include: "Profile.snakefile"
 include: "Clustering.snakefile"
@@ -28,8 +31,10 @@ rule all:
     input:
         f"output/{dataset_name}/ref.json",
         f"output/{dataset_name}/reps",
-        f"output/{dataset_name}/profile_def.hmm",
-        f"output/{dataset_name}/profile_opt.hmm",
+        f"output/{dataset_name}/profile_BFD_def.hmm",
+        f"output/{dataset_name}/profile_BFD_opt.hmm",
+        f"output/{dataset_name}/profile_uniclust_def.hmm",
+        f"output/{dataset_name}/profile_uniclust_opt.hmm",
         f"output/{dataset_name}/exptl.txt"
 
 def rep_pdb_files(ident):

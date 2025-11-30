@@ -1,3 +1,5 @@
+dbs = { 'BFD': 'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt', 'uniclust': 'UniRef30_2023_02' }
+
 # Download AlphaFold pdb files according to the full list provided
 rule dload_alphafold:
     output:
@@ -84,7 +86,7 @@ rule fetch_opm:
 
 rule dload_uniclust:
     output:
-        directory("analysis/uniclust")
+        directory("analysis/databases/uniclust")
     params:
         url = "https://wwwuser.gwdguser.de/~compbiol/uniclust/2023_02/UniRef30_2023_02_hhsuite.tar.gz"
     shell:
@@ -92,8 +94,39 @@ rule dload_uniclust:
 
 rule dload_bfd:
     output:
-        directory("analysis/BFD")
+        directory("analysis/databases/BFD")
     params:
         url = "https://bfd.mmseqs.com/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt.tar.gz"
     shell:
         "mkdir -p {output} && wget -O- {params.url} | tar xvz -C {output}"
+
+rule ffindex_split:
+    input:
+        a3m   = lambda w: "analysis/databases/{db}/{prefix}_a3m.ffindex".format(db = w.db, prefix = dbs[w.db]),
+        cs219 = lambda w: "analysis/databases/{db}/{prefix}_cs219.ffindex".format(db = w.db, prefix = dbs[w.db]),
+        hhm   = lambda w: "analysis/databases/{db}/{prefix}_hhm.ffindex".format(db = w.db, prefix = dbs[w.db])
+    output:
+        a3m = expand("analysis/databases_split/{{db}}_{chunk}_{of}_a3m.ffindex", chunk = chunks, of = num_chunks),
+        cs219 = expand("analysis/databases_split/{{db}}_{chunk}_{of}_cs219.ffindex", chunk = chunks, of = num_chunks),
+        hhm = expand("analysis/databases_split/{{db}}_{chunk}_{of}_hhm.ffindex", chunk = chunks, of = num_chunks)
+    script:
+        "scripts/ffindex_split.py"
+
+rule ffindex_names:
+    input:
+        index = "analysis/databases_split/{db}_{chunk}_{of}_a3m.ffindex",
+        data = "analysis/databases_split/{db}_{chunk}_{of}_a3m.ffdata"
+    output:
+        "analysis/databases_split/{db}_{chunk}_{of}_names.txt"
+    params:
+        max_name_len = 255
+    script:
+        "scripts/ffindex_names.py"
+
+rule link_ffdata:
+    input:
+        lambda w: "analysis/databases/{db}/{prefix}_{ext}.ffdata".format(db = w.db, prefix = dbs[w.db], ext = w.ext)
+    output:
+        "analysis/databases_split/{db}_{chunk}_{of}_{ext}.ffdata"
+    shell:
+        "ln -sr {input} {output}"

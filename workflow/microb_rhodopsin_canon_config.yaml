@@ -1,6 +1,8 @@
 name: microb_rhodopsin_canon
 ident: 40
 ident_align: 60
+ident_hhsearch: 40
+ident_hmmbuild: 30
 ref_pdb: 7Z09.A
 ref_lysine_pos: 216
 pad_n: 14

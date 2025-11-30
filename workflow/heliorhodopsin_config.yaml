@@ -1,6 +1,7 @@
 name: heliorhodopsin
 ident: 40
-ident_align: 60
+ident_hhsearch: 40
+ident_hmmbuild: 30
 ref_pdb: 6SU3.A
 ref_lysine_pos: 241
 pad_n: 14

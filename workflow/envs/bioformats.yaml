@@ -1,0 +1,4 @@
+dependencies:
+ - pip
+ - pip:
+   - git+https://github.com/alephreish/bioformats@cae533c
