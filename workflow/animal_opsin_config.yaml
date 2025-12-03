@@ -1,6 +1,9 @@
 name: animal_opsin
 ident: 40
-ident_align: 60
+ident_hhsearch: 40
+ident_hmmbuild: 30
+probab_hhsearch: 99.9
+databases: [ 'uniclust' ]
 ref_pdb: 1U19.A
 ref_lysine_pos: 296
 pad_n: 14

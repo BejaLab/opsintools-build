@@ -1,8 +1,9 @@
-name: microb_rhodopsin_canon
+name: canon_microb_rhodopsin
 ident: 40
-ident_align: 60
 ident_hhsearch: 40
 ident_hmmbuild: 30
+probab_hhsearch: 95
+databases: [ 'uniclust' ]
 ref_pdb: 7Z09.A
 ref_lysine_pos: 216
 pad_n: 14
@@ -15,5 +16,5 @@ min_align_len: 180
 max_align_len: 500
 helix_padding_n: 2
 helix_padding_c: 2
-alphafold_list: workflow/microb_rhodopsin_canon_alphafold.txt
-pdb_list: workflow/microb_rhodopsin_canon_pdb.txt
+alphafold_list: workflow/canon_microb_rhodopsin_alphafold.txt
+pdb_list: workflow/canon_microb_rhodopsin_pdb.txt

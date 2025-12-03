@@ -1,24 +1,19 @@
 from bioformats import parse_hhr
 
 hhr_files = snakemake.input['hhr']
-
 names_files = snakemake.input['names']
-a3m_inputs = snakemake.input['a3m']
-cs219_inputs = snakemake.input['cs219']
-hhm_inputs = snakemake.input['hhm']
+ffindex_files = snakemake.input['ffindex']
 
-a3m_output = snakemake.output['a3m']
-cs219_output = snakemake.output['cs219']
-hhm_output = snakemake.output['hhm']
+output_file = str(snakemake.output)
 
 probab_threshold = snakemake.params['probab']
+prefix = snakemake.params['prefix']
 
-def write(input_file, output_fh, names):
-    with open(input_file) as input_fh:
-        for line in input_fh:
-            name = line.split('\t', maxsplit = 1)[0]
-            if name in names:
-                output_fh.write(line)
+def write(input_fh, output_fh, names, prefix):
+    for line in input_fh:
+        name = line.split('\t', maxsplit = 1)[0]
+        if name in names:
+            output_fh.write(prefix + line)
 
 def filter_hhsearch(hhr_file, names_file, probab_threshold):
     numbers = set()
@@ -34,9 +29,8 @@ def filter_hhsearch(hhr_file, names_file, probab_threshold):
                 numbers.add(number)
     return numbers
 
-with open(a3m_output, 'w') as a3m_fh, open(cs219_output, 'w') as cs219_fh, open(hhm_output, 'w') as hhm_fh:
-    for hhr_file, names_file, a3m_input, cs219_input, hhm_input in zip(hhr_files, names_files, a3m_inputs, cs219_inputs, hhm_inputs):
+with open(output_file, 'w') as out_fh:
+    for hhr_file, names_file, ffindex_file in zip(hhr_files, names_files, ffindex_files):
         numbers = filter_hhsearch(hhr_file, names_file, probab_threshold)
-        write(a3m_input,   a3m_fh,   numbers)
-        write(cs219_input, cs219_fh, numbers)
-        write(hhm_input,   hhm_fh,   numbers)
+        with open(ffindex_file) as ffindex_fh:
+            write(ffindex_fh, out_fh, numbers, prefix)

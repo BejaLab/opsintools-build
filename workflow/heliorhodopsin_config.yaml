@@ -2,6 +2,8 @@ name: heliorhodopsin
 ident: 40
 ident_hhsearch: 40
 ident_hmmbuild: 30
+probab_hhsearch: 95
+databases: [ 'BFD', 'uniclust' ]
 ref_pdb: 6SU3.A
 ref_lysine_pos: 241
 pad_n: 14

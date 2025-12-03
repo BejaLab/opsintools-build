@@ -2,4 +2,4 @@ dependencies:
  - python=3.12
  - pip
  - pip:
-   - git+https://github.com/alephreish/ffindex_py@3256518
+   - git+https://github.com/alephreish/ffindex_py@6545ecd

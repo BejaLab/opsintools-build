@@ -1,4 +1,4 @@
-dbs = { 'BFD': 'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt', 'uniclust': 'UniRef30_2023_02' }
+prefixes = { 'BFD': 'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt', 'uniclust': 'UniRef30_2023_02' }
 
 # Download AlphaFold pdb files according to the full list provided
 rule dload_alphafold:
@@ -102,9 +102,9 @@ rule dload_bfd:
 
 rule ffindex_split:
     input:
-        a3m   = lambda w: "analysis/databases/{db}/{prefix}_a3m.ffindex".format(db = w.db, prefix = dbs[w.db]),
-        cs219 = lambda w: "analysis/databases/{db}/{prefix}_cs219.ffindex".format(db = w.db, prefix = dbs[w.db]),
-        hhm   = lambda w: "analysis/databases/{db}/{prefix}_hhm.ffindex".format(db = w.db, prefix = dbs[w.db])
+        a3m   = lambda w: "analysis/databases/{db}/{prefix}_a3m.ffindex".format(db = w.db, prefix = prefixes[w.db]),
+        cs219 = lambda w: "analysis/databases/{db}/{prefix}_cs219.ffindex".format(db = w.db, prefix = prefixes[w.db]),
+        hhm   = lambda w: "analysis/databases/{db}/{prefix}_hhm.ffindex".format(db = w.db, prefix = prefixes[w.db])
     output:
         a3m = expand("analysis/databases_split/{{db}}_{chunk}_{of}_a3m.ffindex", chunk = chunks, of = num_chunks),
         cs219 = expand("analysis/databases_split/{{db}}_{chunk}_{of}_cs219.ffindex", chunk = chunks, of = num_chunks),
@@ -125,7 +125,7 @@ rule ffindex_names:
 
 rule link_ffdata:
     input:
-        lambda w: "analysis/databases/{db}/{prefix}_{ext}.ffdata".format(db = w.db, prefix = dbs[w.db], ext = w.ext)
+        lambda w: "analysis/databases/{db}/{prefix}_{ext}.ffdata".format(db = w.db, prefix = prefixes[w.db], ext = w.ext)
     output:
         "analysis/databases_split/{db}_{chunk}_{of}_{ext}.ffdata"
     shell:

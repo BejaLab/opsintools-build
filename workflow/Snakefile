@@ -31,11 +31,10 @@ rule all:
     input:
         f"output/{dataset_name}/ref.json",
         f"output/{dataset_name}/reps",
-        f"output/{dataset_name}/profile_BFD_def.hmm",
-        f"output/{dataset_name}/profile_BFD_opt.hmm",
-        f"output/{dataset_name}/profile_uniclust_def.hmm",
-        f"output/{dataset_name}/profile_uniclust_opt.hmm",
-        f"output/{dataset_name}/exptl.txt"
+        f"output/{dataset_name}/profile.hmm",
+        f"output/{dataset_name}/profile.fasta",
+        f"output/{dataset_name}/exptl.txt",
+        f"output/{dataset_name}/profile_ref.txt"
 
 def rep_pdb_files(ident):
     fasta_file = checkpoints.final_fasta_mmseqs.get(ident = ident, dataset_name = dataset_name).output[0]
@@ -72,6 +71,15 @@ rule write_ref_data:
         "envs/biopython.yaml"
     script:
         "scripts/write_ref_data.py"
+
+rule pdb_to_fasta:
+    input:
+        "analysis/data/{database}/{pdb}/struct.pdb"
+    output:
+        "analysis/data/{database}/{pdb}/struct.pdb.fasta"
+    run:
+        record = SeqIO.read(str(input), "pdb-seqres")
+        SeqIO.write(record, str(output), "fasta")
 
 rule copy_pdb_list:
     input:
