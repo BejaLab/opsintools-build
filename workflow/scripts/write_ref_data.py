@@ -1,8 +1,12 @@
 import re, json
+from Bio import SeqIO
 
 pdb_file = snakemake.input['pdb']
 opm_file = snakemake.input['opm']
+fasta_file = snakemake.input['fasta']
 output_file = str(snakemake.output)
+
+seq = SeqIO.read(fasta_file, 'fasta')
 
 def parse_opm(opm_file):
     with open(opm_file) as file:
@@ -13,7 +17,8 @@ def parse_opm(opm_file):
 data = {
     "id": snakemake.params['ref_pdb'],
     "lysine": snakemake.params['ref_lysine_pos'],
-    "tms": parse_opm(opm_file)
+    "tms": parse_opm(opm_file),
+    "seq": str(seq.seq)
 }
 with open(output_file, 'w') as file:
     json.dump(data, file)

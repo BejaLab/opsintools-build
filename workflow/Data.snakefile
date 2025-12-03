@@ -109,6 +109,8 @@ rule ffindex_split:
         a3m = expand("analysis/databases_split/{{db}}_{chunk}_{of}_a3m.ffindex", chunk = chunks, of = num_chunks),
         cs219 = expand("analysis/databases_split/{{db}}_{chunk}_{of}_cs219.ffindex", chunk = chunks, of = num_chunks),
         hhm = expand("analysis/databases_split/{{db}}_{chunk}_{of}_hhm.ffindex", chunk = chunks, of = num_chunks)
+    conda:
+        "envs/biopython.yaml"
     script:
         "scripts/ffindex_split.py"
 
@@ -120,6 +122,8 @@ rule ffindex_names:
         "analysis/databases_split/{db}_{chunk}_{of}_names.txt"
     params:
         max_name_len = 255
+    conda:
+        "envs/biopython.yaml"
     script:
         "scripts/ffindex_names.py"
 

@@ -61,7 +61,8 @@ rule database_pdb:
 rule write_ref_data:
     input:
         pdb = f"analysis/data/pdb/{ref_pdb}/{dataset_name}/{ref_pdb}.pdb",
-        opm = f"analysis/data/pdb/{ref_pdb}/opm.json"
+        opm = f"analysis/data/pdb/{ref_pdb}/opm.json",
+        fasta = f"analysis/data/pdb/{ref_pdb}/struct.pdb.fasta"
     output:
         f"output/{dataset_name}/ref.json"
     params:
