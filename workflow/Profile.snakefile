@@ -151,18 +151,37 @@ rule hhfilter:
     input:
         "analysis/hhsearch/{dataset_name}/merged/mmseqs_{ident}_reps.a3m"
     output:
-        "analysis/hhsearch/{dataset_name}/merged/mmseqs_{ident}_reps.a2m"
+        "analysis/hhsearch/{dataset_name}/merged/mmseqs_{ident}_reps_hhfilter.a2m"
     params:
         ident = config["ident_hmmbuild"],
         M = 1000000
     conda:
         "envs/hhsuite.yaml"
     shell:
-        "hhfilter -id {params.ident} -maxseq {params.M} -i {input} -o /dev/stdout | reformat.pl a3m a2m - - -v 0 | seqkit grep -vrp _consensus$ -o {output}"
+        "hhfilter -id {params.ident} -maxseq {params.M} -i {input} -o /dev/stdout | addss.pl /dev/stdin /dev/stdout | reformat.pl a3m a2m /dev/stdin {output}"
+
+rule a2m_trim:
+    input:
+        "analysis/hhsearch/{dataset_name}/merged/mmseqs_{ident}_reps_hhfilter.a2m"
+    output:
+        a2m = "analysis/hhsearch/{dataset_name}/merged/mmseqs_{ident}_reps_hhfilter_trimmed.a2m",
+        a3m = "analysis/hhsearch/{dataset_name}/merged/mmseqs_{ident}_reps_hhfilter_trimmed.a3m"
+    conda:
+        "envs/biopython.yaml"
+    script:
+        "scripts/trim_helix_a2m.py"
+
+rule copy_a3m:
+    input:
+        lambda w: "analysis/hhsearch/{{dataset_name}}/merged/mmseqs_{ident}_reps_hhfilter_trimmed.a3m".format(ident = config['ident_hhsearch'])
+    output:
+        "output/{dataset_name}/profile.a3m"
+    shell:
+        "cp {input} {output}"
 
 rule hmmbuild:
     input:
-        lambda w: "analysis/hhsearch/{{dataset_name}}/merged/mmseqs_{ident}_reps.a2m".format(ident = config['ident_hhsearch'])
+        lambda w: "analysis/hhsearch/{{dataset_name}}/merged/mmseqs_{ident}_reps_hhfilter_trimmed.a2m".format(ident = config['ident_hhsearch'])
     output:
         "output/{dataset_name}/profile.hmm"
     params:

@@ -33,6 +33,7 @@ rule all:
         f"output/{dataset_name}/reps",
         f"output/{dataset_name}/profile.hmm",
         f"output/{dataset_name}/profile.fasta",
+        f"output/{dataset_name}/profile.a3m",
         f"output/{dataset_name}/exptl.txt",
         f"output/{dataset_name}/profile_ref.txt"
 
