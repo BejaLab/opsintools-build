@@ -36,7 +36,7 @@ for resn_from, components in atom_map.items():
     cmd.iterate(f"resn {resn_from}", "stored.extra_atoms.append(name)")
     assert not stored.extra_atoms, f"Found additional atoms for ligand {resn_from}: {stored.extra_atoms}"
 
-# Fix resi's in structures like 8XX8
+# Fix resi's in structures with gaps (see 8XX8)
 stored.polymer_resis = set()
 cmd.iterate('polymer', 'stored.polymer_resis.add(int(resi))')
 min_resi = min(stored.polymer_resis)
@@ -50,21 +50,21 @@ if stored.update_resis:
 # Remove all non-covalent ligands
 cmd.remove("hetatm and not byres bound_to polymer")
 
-# Re-number heteroatom resi's
-stored.atom_residues = set()
-stored.hetatm_residues = set()
-cmd.iterate("not hetatm", "stored.atom_residues.add(int(resi))")
-cmd.iterate("hetatm", "stored.hetatm_residues.add(int(resi))")
+# Re-number non-polymer resi's
+stored.polymer_residues = set()
+stored.not_polymer_residues = set()
+cmd.iterate("polymer", "stored.polymer_residues.add(int(resi))")
+cmd.iterate("not polymer", "stored.not_polymer_residues.add(int(resi))")
 
-stored.target_resi = max(stored.atom_residues)
+stored.target_resi = max(stored.polymer_residues)
 
 # temporally re-number them to put outside of the target range
-stored.offset = stored.target_resi + len(stored.hetatm_residues) + 1000
-cmd.alter("hetatm", "resi = stored.offset + int(resi)")
-for resi in stored.hetatm_residues:
+stored.offset = stored.target_resi + len(stored.not_polymer_residues) + 1000
+cmd.alter("not polymer", "resi = stored.offset + int(resi)")
+for resi in stored.not_polymer_residues:
     from_resi = resi + stored.offset
     stored.target_resi += 1
-    cmd.alter(f"hetatm and resi {from_resi}", "resi = stored.target_resi")
+    cmd.alter(f"(not polymer) and resi {from_resi}", "resi = stored.target_resi")
 
 cmd.sort()
 cmd.set('pdb_conect_nodup', 0)

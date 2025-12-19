@@ -1,7 +1,7 @@
 name: animal_opsin
 ident: 40
 ident_hhsearch: 40
-ident_hmmbuild: 30
+ident_hmmbuild: 50
 probab_hhsearch: 99.9
 databases: [ 'uniclust' ]
 ref_pdb: 1U19.A
