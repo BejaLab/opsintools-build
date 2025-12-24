@@ -81,6 +81,7 @@ rule pdb_to_fasta:
         "analysis/data/{database}/{pdb}/struct.pdb.fasta"
     run:
         record = SeqIO.read(str(input), "pdb-seqres")
+        record.id = record.description = wildcards.pdb
         SeqIO.write(record, str(output), "fasta")
 
 rule copy_pdb_list:

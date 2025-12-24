@@ -46,6 +46,7 @@ rule align_reps:
     shell:
         "mafft --localpair --maxiterate 1000 --thread {threads} {input} > {output} 2> {log}"
 
+# Not used
 rule trim_aln:
     input:
         "analysis/clustering/{dataset_name}/mmseqs_{ident}_reps.fas"
