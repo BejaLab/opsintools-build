@@ -6,7 +6,7 @@ rule opsinalign3d:
         expand("output/canon_microb_rhodopsin/reps/{rep}.pdb", rep = canon_microb_rhodopsin_reps),
         expand("output/heliorhodopsin/reps/{rep}.pdb", rep = heliorhodopsin_reps)
     output:
-        directory("output/microb_rhodopsins")
+        directory("analysis/microb_rhodopsins")
     params:
         methods = "mtm_align_msa"
     conda:
@@ -18,7 +18,7 @@ rule opsinalign3d:
 
 rule parse_align:
     input:
-        aln = "output/microb_rhodopsins",
+        aln = "analysis/microb_rhodopsins",
         refs = expand("output/{profile}/ref.json", profile = [ "canon_microb_rhodopsin", "heliorhodopsin" ])
     output:
         "output/microb_rhodopsins_align.tsv"

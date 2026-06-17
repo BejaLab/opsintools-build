@@ -77,14 +77,14 @@ def match_record_for_ref(
 
 def tm_label(tms, pos_1based):
     if pos_1based is None:
-        return ""
+        return "-"
     for helix, interval in tms.items():
         if not isinstance(interval, list) or len(interval) != 2:
             raise ValueError(f"Invalid TM interval for {helix}: {interval}")
         start, end = int(interval[0]), int(interval[1])
         if start <= pos_1based <= end:
             return str(helix)
-    return ""
+    return "-"
 
 
 aln_dir = Path(snakemake.input.aln)
@@ -141,8 +141,8 @@ with out_path.open("w", encoding="utf-8", newline="") as handle:
 
         ref1_pos = None
         ref2_pos = None
-        ref1_res = ""
-        ref2_res = ""
+        ref1_res = "-"
+        ref2_res = "-"
 
         if not is_gap1:
             pos_counter1 += 1
@@ -158,8 +158,8 @@ with out_path.open("w", encoding="utf-8", newline="") as handle:
             [
                 ref1_name,
                 ref2_name,
-                "" if ref1_pos is None else ref1_pos,
-                "" if ref2_pos is None else ref2_pos,
+                "-" if ref1_pos is None else ref1_pos,
+                "-" if ref2_pos is None else ref2_pos,
                 ref1_res,
                 ref2_res,
                 tm_label(ref1["tms"], ref1_pos),
